@@ -36,7 +36,7 @@
 (deftask deploy []
   (comp
     (cljs :optimizations :advanced)
-    (sift :exclude #{"hightlight.pack.inc.js"})
+    (sift :exclude #{"highlight\\..*\\.js"})
     (less :compression true)
     (cryogen)
     (sitemap)
