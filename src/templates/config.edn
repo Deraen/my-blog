@@ -1,0 +1,19 @@
+{:site-title       "Deraen's blog"
+ :author           "Juho Teperi"
+ :description      "This blog is awesome"
+ :site-url         "http://blogawesome.com/"
+ :recent-posts     3
+ :post-date-format "dd-MM-yyyy"
+ :disqus?          false
+ :disqus-shortname ""
+ :blog-prefix      ""
+ :post-root        "posts/"
+ :tag-root         "tags/"
+ :page-root        "pages/"
+ :rss-name         "feed.xml"
+ ; IGNORED BY CRYOGEN-BOOT
+ :sass-src         nil
+ :sass-dest        nil
+ :keep-files       [".git"]
+ :resources        ["css" "js" "404.html"]
+ :ignored-files    [#"\.#.*" #".*\.swp$"]}
