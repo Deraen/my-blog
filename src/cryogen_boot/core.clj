@@ -20,23 +20,16 @@
 
 (cache-off!)
 
-(defn path-filter [mkpred]
-  (fn [criteria files]
-    (let [tmp?   (partial satisfies? tmpd/ITmpFile)
-          ->file #(if (tmp? %) (tmpd/path %) (.getPath (io/file %)))]
-      (filter #(some identity ((apply juxt (map mkpred criteria)) (->file %))) files))))
-
-(defn by-path-re
-  [res files]
-  ((path-filter #(fn [p] (re-find % p))) res files))
+(defn find-by-path [path fileset]
+  (->> fileset core/input-files (core/by-re [(re-pattern (str "^" path))]) (core/by-ext [".md"]) (map tmpd/file)))
 
 (defn find-posts
   [fileset {:keys [post-root]}]
-  (->> fileset core/input-files (by-path-re [(re-pattern post-root)]) (core/by-ext [".md"]) (map tmpd/file)))
+  (find-by-path post-root fileset))
 
 (defn find-pages
   [fileset {:keys [page-root]}]
-  (->> fileset core/input-files (by-path-re [(re-pattern page-root)]) (core/by-ext [".md"]) (map tmpd/file)))
+  (find-by-path page-root fileset))
 
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.
