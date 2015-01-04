@@ -1,9 +1,6 @@
-(ns cryogen-boot.core
+(ns deraen.boot-cryogen.impl
   {:boot/export-tasks true}
   (:require
-    [boot.core :as core]
-    [boot.util :as util]
-    [boot.tmpdir :as tmpd]
     [cryogen-core.compiler :as cryogen]
     [selmer.parser :refer [cache-off! render-file]]
     [cryogen-core.io :refer [get-resource]]
@@ -20,22 +17,12 @@
 
 (cache-off!)
 
-(defn find-by-path [path fileset]
-  (->> fileset core/input-files (core/by-re [(re-pattern (str "^" path))]) (core/by-ext [".md"]) (map tmpd/file)))
-
-(defn find-posts
-  [fileset {:keys [post-root]}]
-  (find-by-path post-root fileset))
-
-(defn find-pages
-  [fileset {:keys [page-root]}]
-  (find-by-path page-root fileset))
-
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.
    Sorts the sequence by post date."
-  [fileset config]
-  (->> (find-posts fileset config)
+  [post-paths config]
+  (->> post-paths
+       (map io/file)
        (map #(cryogen/parse-page true % config))
        (sort-by :date)
        reverse))
@@ -43,8 +30,9 @@
 (defn read-pages
   "Returns a sequence of maps representing the data from markdown files of pages.
    Sorts the sequence by post date."
-  [fileset config]
-  (->> (find-pages fileset config)
+  [page-paths config]
+  (->> page-paths
+       (map io/file)
        (map #(cryogen/parse-page false % config))
        (sort-by :page-index)))
 
@@ -121,64 +109,43 @@
                             {:archives true
                              :groups   (cryogen/group-for-archive posts)}))))
 
-(defn read-config
-  "Reads the config file"
-  []
-  (-> "templates/config.edn"
-      get-resource
-      slurp
-      read-string
-      (update-in [:blog-prefix] (fnil str ""))
-      (update-in [:rss-name] (fnil str "rss.xml"))
-      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))))
+(defn compile-cryogen
+  [tmp-path
+   {:keys [recent-posts blog-prefix rss-name]
+    :as config}
+   post-paths page-paths]
+  (let [posts (cryogen/add-prev-next (read-posts post-paths config))
+        pages (cryogen/add-prev-next (read-pages page-paths config))
+        [navbar-pages sidebar-pages] (cryogen/group-pages pages)
+        posts-by-tag (cryogen/group-by-tags posts)
+        posts (cryogen/tag-posts posts config)
+        default-params {:title         (:site-title config)
+                        :tags          (map (partial cryogen/tag-info config) (keys posts-by-tag))
+                        :latest-posts  (->> posts (take recent-posts) vec)
+                        :navbar-pages  navbar-pages
+                        :sidebar-pages sidebar-pages
+                        :archives-uri  (str blog-prefix "/archives.html")
+                        :index-uri     (str blog-prefix "/index.html")
+                        :rss-uri       (str blog-prefix "/" rss-name)}]
 
-(core/deftask cryogen []
-  (let [tmp (core/temp-dir!)]
-    (core/with-pre-wrap
-      fileset
-      (let [{:keys [site-url blog-prefix recent-posts rss-name] :as config} (read-config)
-            posts (cryogen/add-prev-next (read-posts fileset config))
-            pages (cryogen/add-prev-next (read-pages fileset config))
-            [navbar-pages sidebar-pages] (cryogen/group-pages pages)
-            posts-by-tag (cryogen/group-by-tags posts)
-            posts (cryogen/tag-posts posts config)
-            default-params {:title         (:site-title config)
-                            :tags          (map (partial cryogen/tag-info config) (keys posts-by-tag))
-                            :latest-posts  (->> posts (take recent-posts) vec)
-                            :navbar-pages  navbar-pages
-                            :sidebar-pages sidebar-pages
-                            :archives-uri  (str blog-prefix "/archives.html")
-                            :index-uri     (str blog-prefix "/index.html")
-                            :rss-uri       (str blog-prefix "/" rss-name)}]
+    (compile-pages    tmp-path default-params pages config)
+    (compile-posts    tmp-path default-params posts config)
+    (compile-tags     tmp-path default-params posts-by-tag config)
+    (compile-index    tmp-path default-params config)
+    (compile-archives tmp-path default-params posts config)
+    (spit (io/file tmp-path blog-prefix rss-name)      (rss/make-channel config posts))))
 
-        (compile-pages    tmp default-params pages config)
-        (compile-posts    tmp default-params posts config)
-        (compile-tags     tmp default-params posts-by-tag config)
-        (compile-index    tmp default-params config)
-        (compile-archives tmp default-params posts config)
-        (spit (io/file tmp blog-prefix rss-name)      (rss/make-channel config posts)))
-      (-> fileset (core/add-resource tmp) core/commit!))))
-
-(defn generate-sitemap [site-url files]
-  (with-out-str
-    (emit
-      {:tag :urlset
-       :attrs {:xmlns "http://www.sitemaps.org/schemas/sitemap/0.9"}
-       :content
-       (for [f files]
-         {:tag :url
-          :content
-          [{:tag :loc
-            :content [(str site-url (sitemap/loc f))]}
-           {:tag :lastmod
-            :content [(-> f (.lastModified) (Date.) sitemap/format-date)]}]})})))
-
-(core/deftask sitemap []
-  (let [tmp (core/temp-dir!)]
-    (core/with-pre-wrap
-      fileset
-      (let [{:keys [site-url blog-prefix] :as config} (read-config)
-            html-files (->> fileset core/input-files (core/by-ext [".html"]) (map tmpd/file))]
-        (spit (io/file tmp blog-prefix "sitemap.xml")
-              (generate-sitemap site-url html-files)))
-      (-> fileset (core/add-resource tmp) core/commit!))))
+(defn generate-sitemap [tmp-path {:keys [blog-prefix site-url]} files]
+  (spit (io/file tmp-path blog-prefix "sitemap.xml")
+        (with-out-str
+          (emit
+            {:tag :urlset
+             :attrs {:xmlns "http://www.sitemaps.org/schemas/sitemap/0.9"}
+             :content
+             (for [f (map io/file files)]
+               {:tag :url
+                :content
+                [{:tag :loc
+                  :content [(str site-url (sitemap/loc f))]}
+                 {:tag :lastmod
+                  :content [(-> f (.lastModified) (Date.) sitemap/format-date)]}]})}))))
