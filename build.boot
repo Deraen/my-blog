@@ -4,6 +4,7 @@
   :dependencies '[[adzerk/boot-cljs        "0.0-2629-1"]
                   [adzerk/boot-reload      "0.2.3"]
                   [deraen/boot-less        "0.2.0"]
+                  [deraen/boot-cryogen     "0.1.0-SNAPSHOT"]
                   [org.webjars/bootstrap   "3.3.1"]
                   [org.webjars/highlightjs "8.4-4"]
                   [pandeiro/boot-http      "0.4.1"]])
