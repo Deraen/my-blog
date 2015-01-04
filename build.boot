@@ -2,15 +2,15 @@
   :source-paths #{"src"}
   :resource-paths #{"resources"}
   :dependencies '[; FIXME:
-                  [cryogen-core "0.1.9"]
+                  [cryogen-core "0.1.11"]
 
-                  [adzerk/boot-cljs        "0.0-2411-8"]
-                  [adzerk/boot-reload      "0.2.2"]
+                  [adzerk/boot-cljs        "0.0-2629-1"]
+                  [adzerk/boot-reload      "0.2.3"]
                   ; [cljsjs/boot-cljsjs      "0.3.0"]
                   [deraen/boot-less        "0.2.0"]
                   [org.webjars/bootstrap   "3.3.1"]
-                  [org.webjars/highlightjs "8.4"]
-                  [pandeiro/boot-http      "0.4.0"]])
+                  [org.webjars/highlightjs "8.4-4"]
+                  [pandeiro/boot-http      "0.4.1"]])
 
 (require
   '[adzerk.boot-reload    :refer :all]
@@ -18,7 +18,7 @@
   ; '[cljsjs.app            :refer :all]
   '[deraen.boot-less      :refer :all]
   '[cryogen-boot.core     :refer :all]
-  '[pandeiro.http         :refer :all])
+  '[pandeiro.boot-http    :refer :all])
 
 (task-options!
   less {:source-map true})
