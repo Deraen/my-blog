@@ -9,7 +9,8 @@
                   ; [cljsjs/boot-cljsjs      "0.3.0"]
                   [deraen/boot-less        "0.2.0"]
                   [org.webjars/bootstrap   "3.3.1"]
-                  [org.webjars/highlightjs "8.4"]])
+                  [org.webjars/highlightjs "8.4"]
+                  [pandeiro/boot-http      "0.4.0"]])
 
 (require
   '[adzerk.boot-reload    :refer :all]
@@ -17,7 +18,7 @@
   ; '[cljsjs.app            :refer :all]
   '[deraen.boot-less      :refer :all]
   '[cryogen-boot.core     :refer :all]
-  '[cryogen-boot.server   :refer :all])
+  '[pandeiro.http         :refer :all])
 
 (task-options!
   less {:source-map true})
