@@ -20,10 +20,9 @@ WIP
 ## TODO
 
 - Now every file is recompiled when ever one file is changed
-  - Keeping the state between file changes and only loading the changed files
-  should make recompilatin faster
-- Cryogen stuff should run in pod
-- Cryogen-boot should be a separate project
+  - ~~Keeping the state between file changes and only loading the changed files
+  should make recompilatin faster~~~
+  - Doesn't seem to matter a lot
 
 [boot-clj]: http://boot-clj.com/
 [cryogen]: http://cryogenweb.org/
